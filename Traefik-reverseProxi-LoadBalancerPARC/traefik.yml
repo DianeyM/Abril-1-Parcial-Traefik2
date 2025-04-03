@@ -1,0 +1,35 @@
+#Ooojooo. Este es un archico estático; si cambias traefik.yml, debes reiniciar Traefik (docker-compose up -d --force-recreate).
+#Se configuran los commands:
+#- "--api.dashboard=true"  # Habilita el panel de control de Traefik
+#- "--api.insecure=true"  # Permite acceder al dashboard sin autenticación (¡no recomendado en producción!)
+#- "--entrypoints.web.address=:80"  # Define el puerto de entrada para tráfico HTTP
+#- "--entrypoints.websecure.address=:443"  # Define el puerto de entrada para tráfico HTTPS
+#- "--providers.file.filename=/etc/traefik/dynamic.yml"  # Carga el archivo de configuración
+api:
+  dashboard: true # Habilita el panel de control de Traefik
+  insecure: true  # ⚠️ No usar en producción. Permite el acceso sin autenticación al dashboard
+
+entryPoints:
+  web:
+    address: ":80" #Puerto interno en docker para HTTP.
+  websecure:
+    address: ":443" #Puerto interno en docker para HTTPS.
+
+providers:
+  docker:  # Usamos Docker como proveedor
+    exposedByDefault: false  #No exponer todos los contenedores por defecto; solo los que tengan las etiquetas correspondientes
+  file:  # Usamos el proveedor file para el archivo dinámico
+    filename: /etc/traefik/dynamic.yml
+    watch: true   # 👈 Permite recargar cambios en caliente; así Traefik detectará cambios en dynamic.yml sin reiniciarse. Para el proveedor 
+    #docker está en true por defecto, pero para este caso, es decir para el proveedor file, no está en true por defecto y por lo tanto se 
+    #debe incluir así. 
+
+# Configuración de logs
+accessLog:
+  filePath: "/var/log/access.log"  # Ruta donde se guardarán los logs de acceso
+  format: json  # Puedes elegir el formato (json o texto)
+
+metrics:
+  prometheus:
+    entryPoint: web 
+    buckets: [0.1, 0.3, 1.2, 5.0] #Esto significa que Prometheus dividirá las métricas de latencia de las solicitudes en intervalos (en segundos).

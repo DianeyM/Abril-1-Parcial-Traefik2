@@ -1,0 +1,33 @@
+services:
+  reverse-proxy:
+    image: traefik:latest
+    container_name: docker_reverse-proxy_traefik
+    restart: always # Reinicia el contenedor automáticamente si se detiene
+    environment:
+      - TZ=America/Bogota  # Define la zona horaria para el contenedor para efectos de los logs
+    networks:
+      - traefik_reverse-proxy_network
+    ports:
+      - "80:80"   # Expone el puerto 80 para tráfico HTTP
+      - "443:443" # Expone el puerto 444 externamente como HTTPS (se puede cambiar a 443 si no está en uso).
+      - "8081:8080" # Expone el puerto 8081 externamente para acceder al panel de administración de Traefik.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Permite que Traefik acceda a los contenedores de Docker (modo de solo lectura).
+      - ./traefik.yml:/etc/traefik/traefik.yml  # Monta el archivo con configuraciones estáticas (proveedores, entrypoints)
+      - ./dynamic.yml:/etc/traefik/dynamic.yml  # Monta el archivo con configuraciones dinámicas (routers, servers, middlewares)
+      - ./logs:/var/log  # Esto monta el directorio ./logs en el contenedor
+
+  cliente-X:
+    image: mi-app-python11-web:v1  # Aquí se define el nombre de la imagen del servicio web.
+    build:  ./backend #Se le indica a Docker que debe construir la imagen del contenedor usando un Dockerfile ubicado en el directorio indicado.
+    container_name: dianey-mi-app-python-docker11
+    restart: always
+    networks:
+      - traefik_reverse-proxy_network
+    ports:
+      - "5000:5000"
+
+networks:
+  traefik_reverse-proxy_network:
+    name: traefik_reverse-proxy_network
+    driver: bridge

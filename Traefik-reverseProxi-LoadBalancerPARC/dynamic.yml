@@ -1,0 +1,32 @@
+#El archivo dynamic.yml puede contener configuraciones dinámicas como routers, servicios y middlewares.
+#1. Se configuran los labels: - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)" y 
+#- "traefik.http.routers.whoami.entrypoints=web"  # Usa el entrypoint web (HTTP). 
+#2. passHostHeader: true le indica a Traefik que mantenga el encabezado Host original de la solicitud cuando la reenvía al backend. 
+#Esto significa que si un cliente hace una petición con un Host específico, el backend (como whoami o un servidor Nginx) recibirá 
+#exactamente ese mismo Host, en lugar de que Traefik lo reemplace con otra información.
+http:
+  routers:
+    cliente-X-router: #Nombre del router
+      rule: "PathPrefix(`/clientX`) || Host(`X-Client-Dianey`)"
+      entrypoints: web
+      service: cliente-X-service # El servicio al que este router debe dirigir el tráfico es 'cliente-X-service'
+    traefik-dashboard:
+      rule: "PathPrefix(`/dashboard`)" # O usa tu dominio o IP
+      service: api@internal  # Este es el servicio interno que Traefik usa para su dashboard
+      entryPoints:
+        - "web"  # Asegúrate de que el dashboard esté expuesto en el entrypoint adecuado
+      middlewares:
+        - "basic-auth"  # Aplica el middleware de autenticación básica al dashboard
+
+  services:
+    cliente-X-service: #Nombre del servicio
+      loadBalancer: #Balanceador de carga del servicio
+        passHostHeader: true #asegura que el encabezado 'Host' original de la solicitud se pase a los contenedores backend
+        servers:
+          - url: "http://localhost:5000"
+
+  middlewares:
+    basic-auth:
+      basicAuth:
+        users:
+          - "dianey:$2y$05$UJZpibcTwWqFMrbtR0ReFewcAzgqUF1HR6b5f5j.xK9f8n3Zp7QBu"  # Usuario y la contraseña encriptadada
